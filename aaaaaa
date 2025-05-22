@@ -1,84 +1,97 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-from tkinter import *
+from collections import Counter
 
 
-# Classe que representa um Filme
+# Classe filme
 class Filme:
     def __init__(self, titulo, duracao, classificacao):
         self.titulo = titulo
         self.duracao = duracao
         self.classificacao = classificacao
 
-# Classe que representa uma Sessão de Cinema
+# Classe sessão de cinema
 class Sessao:
     def __init__(self, filme, horario, assentos_disponiveis):
         self.filme = filme
         self.horario = horario
         self.assentos_disponiveis = assentos_disponiveis
 
-# Classe que representa um Cliente
+# Classe cliente
 class Cliente:
     def __init__(self, nome, nif):
         self.nome = nome
         self.nif = nif
-        self.ingressos_comprados = []
+        self.ingressos_comprados = []  #Lista de ingressos comprados
 
-# Classe que representa o Cinema
+# Classe principal que representa o cinema
 class Cinema:
     def __init__(self):
-        self.sessoes = []
-        self.clientes = []
+        self.sessoes = []  #Lista de sessões
+        self.clientes = []  # Lista de clientes
 
+    # Adiciona uma nova sessão
     def adicionar_sessao(self, sessao):
         self.sessoes.append(sessao)
 
+    # Retorna a lista de sessões
     def listar_sessoes(self):
         return self.sessoes
 
+    # Remove uma sessão por índice
     def remover_sessao(self, indice):
         if 0 <= indice < len(self.sessoes):
             del self.sessoes[indice]
             return True
         return False
 
-    def comprar_ingresso(self, nome_cliente, nif, indice_sessao):
+    # Compra de ingresso para uma sessão específica
+    def comprar_ingresso(self, nome_cliente, nif, indice_sessao, quantidade):
         if not (0 <= indice_sessao < len(self.sessoes)):
             return False
 
         sessao = self.sessoes[indice_sessao]
-        if sessao.assentos_disponiveis <= 0:
+
+        # Verifica se há lugares suficientes
+        if sessao.assentos_disponiveis < quantidade:
             return False
 
+        # Verifica se o cliente já existe
         cliente = next((c for c in self.clientes if c.nif == nif), None)
         if not cliente:
             cliente = Cliente(nome_cliente, nif)
             self.clientes.append(cliente)
 
-        sessao.assentos_disponiveis -= 1
-        cliente.ingressos_comprados.append(f"{sessao.filme.titulo} às {sessao.horario}")
+        #Atualiza o número de lugares disponíveis e adiciona ingressos ao cliente
+        sessao.assentos_disponiveis -= quantidade
+        for _ in range(quantidade):
+            cliente.ingressos_comprados.append(f"{sessao.filme.titulo} às {sessao.horario}")
         return True
 
+    #Retorna os bilhetes de um cliente com base no NIF
     def bilhetes_cliente(self, nif):
         cliente = next((c for c in self.clientes if c.nif == nif), None)
         return cliente.ingressos_comprados if cliente else []
 
-# Interface Gráfica com Tkinter
+# Classe da interface gráfica
 class AppCinema:
     def __init__(self, master):
         self.cinema = Cinema()
         self.master = master
-        master.title("Sistema de Venda de Ingressos - Cinema Local")
 
-        # Botões
-        tk.Button(row1, master, text="Adicionar Filme e Sessão", command=self.adicionar_sessao, width = 20).pack(pady=5)
-        tk.Button(master, text="Listar Sessões Disponíveis", command=self.listar_sessoes, width = 20).pack(pady=5)
-        tk.Button(master, text="Remover Sessão", command=self.remover_sessao, width = 20).pack(pady=5)
-        tk.Button(master, text="Comprar Ingresso", command=self.comprar_ingresso, width = 20).pack(pady=5)
-        tk.Button(master, text="Ver Bilhetes de Cliente", command=self.ver_bilhetes_cliente, width = 20).pack(pady=5)
+        master.title("Sistema de Venda de Ingressos - Cinema Local ")
 
+        #botões
+        tk.Button(master, text="Adicionar Filme e Sessão", command=self.adicionar_sessao, width=25, height=2, bg="#C0C0C0").pack(pady=5)
+        tk.Button(master, text="Listar Sessões Disponíveis", command=self.listar_sessoes, width=25, height=2, bg="#C0C0C0").pack(pady=5)
+        tk.Button(master, text="Remover Sessão", command=self.remover_sessao, width=25, height=2, bg="#C0C0C0").pack(pady=5)
+        tk.Button(master, text="Comprar Ingresso", command=self.comprar_ingresso, width=25, height=2, bg="#C0C0C0").pack(pady=5)
+        tk.Button(master, text="Ver Bilhetes de Cliente", command=self.ver_bilhetes_cliente, width=25, height=2, bg="#C0C0C0").pack(pady=5)
+
+    #Função para adicionar sessão
     def adicionar_sessao(self):
         try:
+           
             titulo = simpledialog.askstring("Filme", "Título do Filme:")
             if not titulo:
                 raise ValueError("Título não pode ser vazio.")
@@ -91,33 +104,55 @@ class AppCinema:
             if not classificacao:
                 raise ValueError("Classificação não pode ser vazia.")
 
-            horario = simpledialog.askstring("Sessão", "Horário da Sessão (ex: 21:00):")
-            if not horario:
-                raise ValueError("Horário não pode ser vazio.")
-
-            assentos = simpledialog.askinteger("Sessão", "Número de Assentos Disponíveis:")
-            if assentos is None or assentos <= 0:
-                raise ValueError("Número de assentos inválido.")
-
             filme = Filme(titulo, duracao, classificacao)
-            sessao = Sessao(filme, horario, assentos)
-            self.cinema.adicionar_sessao(sessao)
-            messagebox.showinfo("Sucesso", "Sessão adicionada com sucesso.")
+
+            # Permite adicionar varias sessões para o mesmo filme
+            while True:
+                horario = simpledialog.askstring("Sessão", "Horário da Sessão (ex: 21:00):")
+                if not horario:
+                    raise ValueError("Horário não pode ser vazio.")
+
+                assentos = simpledialog.askinteger("Sessão", "Número de Assentos Disponíveis:")
+                if assentos is None or assentos <= 0:
+                    raise ValueError("Número de assentos inválido.")
+
+                sessao = Sessao(filme, horario, assentos)
+                self.cinema.adicionar_sessao(sessao)
+
+                
+                continuar = messagebox.askyesno("Adicionar mais sessões?", "Deseja adicionar outra sessão para esse filme?")
+                if not continuar:
+                    break
+
+            messagebox.showinfo("Sucesso", "Sessão(ões) adicionada(s) com sucesso.")
         except ValueError as e:
             messagebox.showerror("Erro", str(e))
 
+    # Mostra as sessões disponíveis
     def listar_sessoes(self):
         sessoes = self.cinema.listar_sessoes()
         if not sessoes:
             messagebox.showinfo("Sessões", "Não há sessões disponíveis.")
         else:
             texto = "\n".join([
-                f"{i}. {s.filme.titulo} ({s.horario}) - Lugares: {s.assentos_disponiveis}"
+                f"{i}. 🎬 Título: {s.filme.titulo}\n   ⏱️ Duração: {s.filme.duracao} min\n   🎫 Classificação: {s.filme.classificacao}\n   ⏰ Horário: {s.horario}\n   🪑 Assentos disponíveis: {s.assentos_disponiveis}"
                 for i, s in enumerate(sessoes)
             ])
             messagebox.showinfo("Sessões Disponíveis", texto)
 
+    # Remove uma sessão com base no índice informado
     def remover_sessao(self):
+        sessoes = self.cinema.listar_sessoes()
+        if not sessoes:
+            messagebox.showinfo("Sessões", "Não há sessões disponíveis para remover.")
+            return
+
+        texto = "\n".join([
+            f"{i}. 🎬 Título: {s.filme.titulo}\n   ⏱️ Duração: {s.filme.duracao} min\n   🎫 Classificação: {s.filme.classificacao}\n   ⏰ Horário: {s.horario}\n   🪑 Assentos disponíveis: {s.assentos_disponiveis}"
+            for i, s in enumerate(sessoes)
+        ])
+        messagebox.showinfo("Sessões Cadastradas", texto)
+
         try:
             indice = simpledialog.askinteger("Remover Sessão", "Número da Sessão a remover:")
             if indice is None:
@@ -131,6 +166,7 @@ class AppCinema:
         except ValueError as e:
             messagebox.showerror("Erro", str(e))
 
+    #função para realizar a compra de bilhetes
     def comprar_ingresso(self):
         try:
             nome = simpledialog.askstring("Cliente", "Nome do Cliente:")
@@ -141,18 +177,33 @@ class AppCinema:
             if not nif or not nif.isdigit() or len(nif) != 9:
                 raise ValueError("NIF inválido. Deve ter 9 dígitos.")
 
-            indice = simpledialog.askinteger("Compra", "Número da Sessão:")
+            sessoes = self.cinema.listar_sessoes()
+            if not sessoes:
+                messagebox.showinfo("Sessões", "Não há sessões disponíveis para compra.")
+                return
+
+            lista = "\n".join([
+                f"{i}. 🎬 {s.filme.titulo} | ⏰ {s.horario} | 🪑 {s.assentos_disponiveis} lugares | 🎫 {s.filme.classificacao}"
+                for i, s in enumerate(sessoes)
+            ])
+            prompt = f"Escolha o número da sessão para comprar ingresso:\n\n{lista}"
+            indice = simpledialog.askinteger("Compra", prompt)
             if indice is None:
                 return
 
-            sucesso = self.cinema.comprar_ingresso(nome, nif, indice)
+            quantidade = simpledialog.askinteger("Compra", "Quantos bilhetes deseja comprar?")
+            if quantidade is None or quantidade <= 0:
+                raise ValueError("Quantidade inválida.")
+
+            sucesso = self.cinema.comprar_ingresso(nome, nif, indice, quantidade)
             if sucesso:
-                messagebox.showinfo("Compra", "Ingresso comprado com sucesso.")
+                messagebox.showinfo("Compra", f"{quantidade} ingresso(s) comprado(s) com sucesso.")
             else:
                 raise ValueError("Compra falhou. Verifique o número da sessão ou lugares disponíveis.")
         except ValueError as e:
             messagebox.showerror("Erro", str(e))
 
+    # mostra os bilhetes comprados por um cliente
     def ver_bilhetes_cliente(self):
         nif = simpledialog.askstring("Cliente", "Informe o NIF do Cliente:")
         if not nif:
@@ -161,13 +212,19 @@ class AppCinema:
 
         bilhetes = self.cinema.bilhetes_cliente(nif)
         if bilhetes:
-            texto = "\n".join(bilhetes)
-            messagebox.showinfo("Bilhetes", f"Ingressos comprados:\n{texto}")
+            # Conta quantas vezes cada bilhete aparece
+            contagem = Counter(bilhetes)
+
+            # Exibe 
+            texto = "\n".join([f"{quantidade}x {descricao}" for descricao, quantidade in contagem.items()])
+            messagebox.showinfo("Bilhetes do Cliente", f"Ingressos comprados:\n\n{texto}h")
         else:
             messagebox.showinfo("Bilhetes", "Nenhum bilhete encontrado para este NIF.")
 
-# Inicializar a aplicação
+# Inicializa a janela principal do programa
 if __name__ == "__main__":
     root = tk.Tk()
-    app = AppCinema(root)
-    root.mainloop()
+    root.configure(bg="#722F37")  # Cor
+    root.geometry("400x300")      # Tamanho
+    app = AppCinema(root)         # Inicia
+    root.mainloop()               # Loop principal do Tkinter
